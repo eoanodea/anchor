@@ -19,6 +19,9 @@ export default function ArticleDetail() {
   const HORIZONTAL_LOOK_PADDING = 300;
   const VERTICAL_LOOK_PADDING = 30;
   const MAX_LOOK_DISTANCE = 58;
+  const PARAGRAPH_CENTER_DEAD_ZONE_PX = 26;
+  const PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC = 24;
+  const PARAGRAPH_CENTER_MAX_SCROLL_PX_PER_SEC = 95;
 
   const router = useRouter();
   const articleId =
@@ -31,6 +34,7 @@ export default function ArticleDetail() {
     string[]
   >([]);
   const [isCalibrationActive, setIsCalibrationActive] = React.useState(false);
+  const [isScrollingEnabled, setIsScrollingEnabled] = React.useState(true);
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -147,7 +151,13 @@ export default function ArticleDetail() {
       }
     };
 
+    const handleScrollingState = (event: Event) => {
+      const customEvent = event as CustomEvent<{ enabled: boolean }>;
+      setIsScrollingEnabled(customEvent.detail.enabled);
+    };
+
     window.addEventListener("anchor:calibration-state", handleCalibrationState);
+    window.addEventListener("anchor:scrolling-state", handleScrollingState);
 
     const handleGaze = (event: Event) => {
       if (isCalibrationActive) {
@@ -175,12 +185,95 @@ export default function ArticleDetail() {
         "anchor:calibration-state",
         handleCalibrationState
       );
+      window.removeEventListener(
+        "anchor:scrolling-state",
+        handleScrollingState
+      );
     };
   }, [isCalibrationActive]);
 
-  const activeFocusedParagraphKeys = isCalibrationActive
-    ? []
-    : lockedParagraphKeys;
+  const activeFocusedParagraphKeys = React.useMemo(
+    () => (isCalibrationActive ? [] : lockedParagraphKeys),
+    [isCalibrationActive, lockedParagraphKeys]
+  );
+
+  React.useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      isCalibrationActive ||
+      !isScrollingEnabled
+    ) {
+      return;
+    }
+
+    const primaryParagraphKey = activeFocusedParagraphKeys[0];
+    if (!primaryParagraphKey) {
+      return;
+    }
+
+    let animationFrameId = 0;
+    let lastTimestamp = 0;
+
+    const step = (timestamp: number) => {
+      const paragraphElement =
+        paragraphElementsRef.current[primaryParagraphKey];
+      if (!paragraphElement) {
+        animationFrameId = 0;
+        return;
+      }
+
+      if (!lastTimestamp) {
+        lastTimestamp = timestamp;
+        animationFrameId = window.requestAnimationFrame(step);
+        return;
+      }
+
+      const elapsedSeconds = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      const rect = paragraphElement.getBoundingClientRect();
+      const paragraphCenterY = rect.top + rect.height / 2;
+      const viewportCenterY = window.innerHeight / 2;
+      const offset = paragraphCenterY - viewportCenterY;
+      const absoluteOffset = Math.abs(offset);
+
+      if (absoluteOffset <= PARAGRAPH_CENTER_DEAD_ZONE_PX) {
+        animationFrameId = 0;
+        return;
+      }
+
+      const normalized = Math.min(
+        (absoluteOffset - PARAGRAPH_CENTER_DEAD_ZONE_PX) /
+          (window.innerHeight / 2 - PARAGRAPH_CENTER_DEAD_ZONE_PX),
+        1
+      );
+      const speed =
+        PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC +
+        normalized *
+          (PARAGRAPH_CENTER_MAX_SCROLL_PX_PER_SEC -
+            PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC);
+
+      const maxDelta = speed * elapsedSeconds;
+      const delta = Math.sign(offset) * Math.min(absoluteOffset, maxDelta);
+
+      const previousScrollY = window.scrollY;
+      window.scrollBy({ top: delta, left: 0, behavior: "auto" });
+      if (window.scrollY === previousScrollY) {
+        animationFrameId = 0;
+        return;
+      }
+
+      animationFrameId = window.requestAnimationFrame(step);
+    };
+
+    animationFrameId = window.requestAnimationFrame(step);
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [activeFocusedParagraphKeys, isCalibrationActive, isScrollingEnabled]);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "common.white" }}>

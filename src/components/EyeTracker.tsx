@@ -35,6 +35,10 @@ type CalibrationStateEventDetail = {
   isTrackingActive: boolean;
 };
 
+type ScrollingStateEventDetail = {
+  enabled: boolean;
+};
+
 type WebGazer = {
   begin: () => Promise<unknown>;
   end?: () => void;
@@ -161,6 +165,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
   const [status, setStatus] = React.useState<EyeTrackerStatus>("idle");
   const [gazePoint, setGazePoint] = React.useState<GazePoint | null>(null);
   const [showGazeCursor, setShowGazeCursor] = React.useState(false);
+  const [isScrollingEnabled, setIsScrollingEnabled] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [isTrackingRequested, setIsTrackingRequested] = React.useState(false);
   const [calibrationHits, setCalibrationHits] = React.useState<CalibrationHits>(
@@ -191,6 +196,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
       setIsCalibrating(true);
       setShowCalibrationIntro(false);
       setShowGazeCursor(false);
+      setIsScrollingEnabled(true);
       setErrorMessage("");
       setBootNonce(0);
     }
@@ -298,6 +304,16 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
       })
     );
   }, [isCalibrating, status]);
+
+  React.useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent<ScrollingStateEventDetail>("anchor:scrolling-state", {
+        detail: {
+          enabled: isScrollingEnabled
+        }
+      })
+    );
+  }, [isScrollingEnabled]);
 
   const handleCalibrationPointClick = React.useCallback(
     (target: CalibrationTarget) => {
@@ -420,6 +436,23 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
             }}
           >
             Stop
+          </Button>
+        )}
+
+        {status === "active" && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setIsScrollingEnabled((previous) => !previous)}
+            sx={{
+              minWidth: 0,
+              px: 0.5,
+              fontSize: 11,
+              lineHeight: 1.2,
+              color: designSystemColors.blue
+            }}
+          >
+            {isScrollingEnabled ? "Scroll On" : "Scroll Off"}
           </Button>
         )}
 
