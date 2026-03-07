@@ -15,7 +15,7 @@ import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutline
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import { designSystemColors } from "@/config/theme";
-import { publications, type Publication } from "@/data/publications";
+import { Publication, publications } from "@/data/publications";
 
 const heroImages = {
   visualSupport: "/images/library/girl.png",
