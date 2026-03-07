@@ -15,7 +15,7 @@ export default function Home() {
         }}
       >
         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-          Material UI - Next.js example in TypeScript
+          Homepage
         </Typography>
       </Box>
     </Container>
