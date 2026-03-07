@@ -12,13 +12,13 @@ import {
   DocumentHeadTagsProps,
   documentGetInitialProps
 } from "@mui/material-nextjs/v16-pagesRouter";
-import theme, { roboto } from "@/config/theme";
+import theme, { inter } from "@/config/theme";
 
 export default function MyDocument(
   props: DocumentProps & DocumentHeadTagsProps
 ) {
   return (
-    <Html lang="en" className={roboto.className}>
+    <Html lang="en" className={inter.className}>
       <Head>
         {/* PWA primary color */}
         <meta name="theme-color" content={theme.palette.primary.main} />
