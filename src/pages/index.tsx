@@ -1,144 +1,225 @@
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import { designSystemColors, layoutGrid } from "@/config/theme";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
+import MicNoneOutlinedIcon from "@mui/icons-material/MicNoneOutlined";
+import EastRoundedIcon from "@mui/icons-material/EastRounded";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import { designSystemColors } from "@/config/theme";
 
-const desktopColumns = Array.from(
-  { length: layoutGrid.desktop.columns },
-  (_, index) => `desktop-col-${index + 1}`
-);
-const mobileColumns = Array.from(
-  { length: layoutGrid.mobile.columns },
-  (_, index) => `mobile-col-${index + 1}`
-);
+const recentSearchItems = [
+  {
+    id: "guided-reading",
+    title: "Guided Reading & Visual Anchors",
+    icon: (
+      <MenuBookOutlinedIcon
+        sx={{ fontSize: 16, color: designSystemColors.blue }}
+      />
+    )
+  },
+  {
+    id: "attention-orientation",
+    title: "Attention & Orientation in Digital Text",
+    icon: (
+      <MenuBookOutlinedIcon
+        sx={{ fontSize: 16, color: designSystemColors.blue }}
+      />
+    )
+  },
+  {
+    id: "sarah-chen",
+    title: "Dr. Sarah Chen Machine Learning",
+    icon: (
+      <PersonOutlineOutlinedIcon
+        sx={{ fontSize: 16, color: designSystemColors.blue }}
+      />
+    )
+  },
+  {
+    id: "cognitive-load",
+    title: "Reducing Cognitive Load in Academic Tasks",
+    icon: (
+      <ArticleOutlinedIcon
+        sx={{ fontSize: 16, color: designSystemColors.blue }}
+      />
+    )
+  }
+] as const;
 
 export default function Home() {
   return (
-    <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        px: { xs: 3, md: "171px" },
+        pt: { xs: 8, md: "100px" },
+        pb: { xs: 10, md: "120px" },
+        background:
+          "linear-gradient(120deg, rgba(255,255,255,0.95) 0%, rgba(241,240,253,0.75) 45%, rgba(216,237,255,0.65) 100%)"
+      }}
+    >
       <Box
         sx={{
-          bgcolor: "common.black",
-          px: { xs: 3, md: 9 },
-          py: { xs: 5, md: 8 },
-          color: "common.white"
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{ color: designSystemColors.lightBlue, mb: 1 }}
-        >
-          Style Guide
-        </Typography>
-        <Typography variant="h1">Layout Guide</Typography>
-      </Box>
-
-      <Box
-        sx={{
-          px: { xs: 3, md: 6 },
-          py: { xs: 6, md: 10 },
+          width: "100%",
+          maxWidth: 858,
+          mx: "auto",
           display: "flex",
           flexDirection: "column",
-          gap: 8
+          gap: 10
         }}
       >
-        <Box>
-          <Typography variant="h2" sx={{ mb: 4 }}>
-            Spacing: Desktop
-          </Typography>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <Box>
+            <Typography
+              component="div"
+              sx={{
+                fontSize: 36,
+                fontWeight: 700,
+                lineHeight: 1.5,
+                letterSpacing: 0,
+                background: `linear-gradient(90deg, ${designSystemColors.offBlack} 0%, ${designSystemColors.plum900} 12.097%, ${designSystemColors.plum700} 24.194%, ${designSystemColors.purple} 48.387%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}
+            >
+              Hi there, Ally!
+            </Typography>
+            <Typography
+              component="div"
+              sx={{
+                fontSize: 36,
+                fontWeight: 700,
+                lineHeight: 1.5,
+                letterSpacing: 0,
+                background: `linear-gradient(90deg, ${designSystemColors.offBlack} 0%, ${designSystemColors.plum900} 25%, ${designSystemColors.plum700} 50%, ${designSystemColors.purple} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}
+            >
+              What are you looking for today?
+            </Typography>
+          </Box>
 
           <Box
             sx={{
-              width: "100%",
-              maxWidth: `${layoutGrid.desktop.containerWidth}px`,
+              height: 80,
+              borderRadius: 0.5,
+              border: `1px solid ${designSystemColors.lightGrey}`,
+              bgcolor: "common.white",
+              boxShadow: "0px 0px 20px 0px rgba(49,16,68,0.04)",
               display: "flex",
-              alignItems: "stretch"
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: 1.5
             }}
           >
             <Box
               sx={{
-                width: `${layoutGrid.desktop.marginX}px`,
-                height: `${layoutGrid.desktop.columnHeight}px`,
-                bgcolor: "common.black",
-                flexShrink: 0
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                color: "text.secondary"
               }}
-            />
-            <Grid
-              container
-              columns={layoutGrid.desktop.columns}
-              columnSpacing={layoutGrid.desktop.gutter / 8}
-              wrap="nowrap"
-              sx={{ flex: 1, mx: `${layoutGrid.desktop.marginX / 8}px` }}
             >
-              {desktopColumns.map((columnId) => (
-                <Grid key={columnId} size={1}>
-                  <Box
-                    sx={{
-                      bgcolor: designSystemColors.lightBlue,
-                      height: `${layoutGrid.desktop.columnHeight}px`
-                    }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
+              <SearchOutlinedIcon sx={{ fontSize: 16 }} />
+              <Typography
+                sx={{ fontSize: 14, lineHeight: 1.5, color: "text.secondary" }}
+              >
+                Search by topic, paper, website or author
+              </Typography>
+            </Box>
+
             <Box
               sx={{
-                width: `${layoutGrid.desktop.marginX}px`,
-                height: `${layoutGrid.desktop.columnHeight}px`,
-                bgcolor: "common.black",
-                flexShrink: 0
+                display: "flex",
+                alignItems: "center",
+                gap: 2.5,
+                width: 60,
+                justifyContent: "flex-end"
               }}
-            />
+            >
+              <MicNoneOutlinedIcon
+                sx={{ fontSize: 20, color: "text.secondary" }}
+              />
+              <Box
+                sx={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: "9999px",
+                  background:
+                    "linear-gradient(330deg, #2A0053 11.25%, #49284C 86.964%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <EastRoundedIcon sx={{ fontSize: 14, color: "common.white" }} />
+              </Box>
+            </Box>
           </Box>
         </Box>
 
-        <Box>
-          <Typography variant="h2" sx={{ mb: 4 }}>
-            Spacing: Mobile
-          </Typography>
-
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Box
             sx={{
-              width: "100%",
-              maxWidth: `${layoutGrid.mobile.containerWidth}px`,
               display: "flex",
-              alignItems: "stretch"
+              alignItems: "center",
+              justifyContent: "space-between"
             }}
           >
-            <Box
-              sx={{
-                width: `${layoutGrid.mobile.marginX}px`,
-                height: `${layoutGrid.mobile.columnHeight}px`,
-                bgcolor: "common.black",
-                flexShrink: 0
-              }}
-            />
-            <Grid
-              container
-              columns={layoutGrid.mobile.columns}
-              columnSpacing={layoutGrid.mobile.gutter / 8}
-              wrap="nowrap"
-              sx={{ flex: 1, mx: `${layoutGrid.mobile.marginX / 8}px` }}
+            <Typography sx={{ fontSize: 24, fontWeight: 600, lineHeight: 1.5 }}>
+              Recently Searched
+            </Typography>
+            <Typography
+              sx={{ fontSize: 16, fontWeight: 600, color: "primary.main" }}
             >
-              {mobileColumns.map((columnId) => (
-                <Grid key={columnId} size={1}>
+              View all
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            {recentSearchItems.map((item) => (
+              <Grid key={item.id} size={{ xs: 12, sm: 6, md: 3 }}>
+                <Box
+                  sx={{
+                    height: 140,
+                    borderRadius: 1.5,
+                    px: 2.5,
+                    py: 4,
+                    bgcolor: "rgba(255,255,255,0.1)",
+                    boxShadow: "0px 0px 20px 0px rgba(26,26,26,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between"
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                      color: designSystemColors.grey
+                    }}
+                  >
+                    {item.title}
+                  </Typography>
                   <Box
                     sx={{
-                      bgcolor: designSystemColors.lightBlue,
-                      height: `${layoutGrid.mobile.columnHeight}px`
+                      width: 16,
+                      height: 16,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center"
                     }}
-                  />
-                </Grid>
-              ))}
-            </Grid>
-            <Box
-              sx={{
-                width: `${layoutGrid.mobile.marginX}px`,
-                height: `${layoutGrid.mobile.columnHeight}px`,
-                bgcolor: "common.black",
-                flexShrink: 0
-              }}
-            />
-          </Box>
+                  >
+                    {item.icon}
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
       </Box>
     </Box>

@@ -10,6 +10,7 @@ export const designSystemColors = {
   red: "#d50000",
   yellow: "#f6b704",
   green: "#006621",
+  grey: "#757575",
   mediumGrey: "#464646",
   darkGrey: "#202020",
   lightGrey: "#e9e9e9",
@@ -21,13 +22,15 @@ export const designSystemColors = {
   powderBlue: "#d8edff",
   lightPink: "#ffeafc",
   peach: "#ffead9",
+  plum900: "#371b3d",
+  plum700: "#553055",
   purple: "#813c7a",
   brown: "#873600",
   violet: "#8c038e"
 } as const;
 
 export const inter = Inter({
-  weight: ["400", "600"],
+  weight: ["400", "600", "700"],
   subsets: ["latin"],
   display: "swap"
 });
