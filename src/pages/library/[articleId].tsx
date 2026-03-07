@@ -1,5 +1,6 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import MicNoneOutlinedIcon from "@mui/icons-material/MicNoneOutlined";
@@ -13,6 +14,9 @@ import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import { useRouter } from "next/router";
 import { designSystemColors } from "@/config/theme";
 import { publicationById, publications } from "@/data/publications";
+import VisualGuidanceSettingsDialog, {
+  VisualGuidanceSettings
+} from "@/components/VisualGuidanceSettingsDialog";
 
 export default function ArticleDetail() {
   const FOCUS_DWELL_MS = 500;
@@ -34,7 +38,36 @@ export default function ArticleDetail() {
     string[]
   >([]);
   const [isCalibrationActive, setIsCalibrationActive] = React.useState(false);
-  const [isScrollingEnabled, setIsScrollingEnabled] = React.useState(true);
+  const [isTrackingActive, setIsTrackingActive] = React.useState(false);
+  const [visualGuidanceSettings, setVisualGuidanceSettings] =
+    React.useState<VisualGuidanceSettings>({
+      scrollEnabled: true,
+      paragraphHighlightEnabled: true
+    });
+  const [isVisualGuidanceSettingsOpen, setIsVisualGuidanceSettingsOpen] =
+    React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleOpenSettings = () => {
+      setIsVisualGuidanceSettingsOpen(true);
+    };
+
+    window.addEventListener(
+      "anchor:open-visual-guidance-settings",
+      handleOpenSettings
+    );
+
+    return () => {
+      window.removeEventListener(
+        "anchor:open-visual-guidance-settings",
+        handleOpenSettings
+      );
+    };
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -140,27 +173,35 @@ export default function ArticleDetail() {
         isTrackingActive: boolean;
       }>;
 
-      const calibrationIsOn =
-        customEvent.detail.isTrackingActive && customEvent.detail.isCalibrating;
+      const trackingIsOn = customEvent.detail.isTrackingActive;
+      const calibrationIsOn = trackingIsOn && customEvent.detail.isCalibrating;
+      setIsTrackingActive(trackingIsOn);
       setIsCalibrationActive(calibrationIsOn);
 
-      if (calibrationIsOn) {
+      if (!trackingIsOn || calibrationIsOn) {
         pendingCandidateSignature = "";
         pendingCandidateKeys = [];
         pendingCandidateStart = 0;
+      }
+
+      if (!trackingIsOn) {
+        setLockedParagraphKeys([]);
       }
     };
 
     const handleScrollingState = (event: Event) => {
       const customEvent = event as CustomEvent<{ enabled: boolean }>;
-      setIsScrollingEnabled(customEvent.detail.enabled);
+      setVisualGuidanceSettings((previous) => ({
+        ...previous,
+        scrollEnabled: customEvent.detail.enabled
+      }));
     };
 
     window.addEventListener("anchor:calibration-state", handleCalibrationState);
     window.addEventListener("anchor:scrolling-state", handleScrollingState);
 
     const handleGaze = (event: Event) => {
-      if (isCalibrationActive) {
+      if (isCalibrationActive || !isTrackingActive) {
         return;
       }
 
@@ -190,18 +231,19 @@ export default function ArticleDetail() {
         handleScrollingState
       );
     };
-  }, [isCalibrationActive]);
+  }, [isCalibrationActive, isTrackingActive]);
 
   const activeFocusedParagraphKeys = React.useMemo(
-    () => (isCalibrationActive ? [] : lockedParagraphKeys),
-    [isCalibrationActive, lockedParagraphKeys]
+    () => (isCalibrationActive || !isTrackingActive ? [] : lockedParagraphKeys),
+    [isCalibrationActive, isTrackingActive, lockedParagraphKeys]
   );
 
   React.useEffect(() => {
     if (
       typeof window === "undefined" ||
+      !isTrackingActive ||
       isCalibrationActive ||
-      !isScrollingEnabled
+      !visualGuidanceSettings.scrollEnabled
     ) {
       return;
     }
@@ -273,13 +315,18 @@ export default function ArticleDetail() {
         window.cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [activeFocusedParagraphKeys, isCalibrationActive, isScrollingEnabled]);
+  }, [
+    activeFocusedParagraphKeys,
+    isCalibrationActive,
+    isTrackingActive,
+    visualGuidanceSettings
+  ]);
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "common.white" }}>
       <Box
         sx={{
-          px: { xs: 3, md: "171px" },
+          px: { xs: 3, md: 6, lg: "171px" },
           py: { xs: 5, md: "40px" },
           boxShadow: "0px 0px 20px 0px rgba(26,26,26,0.05)",
           bgcolor: "common.white"
@@ -418,9 +465,14 @@ export default function ArticleDetail() {
               <ImportContactsOutlinedIcon
                 sx={{ fontSize: 20, color: "common.black" }}
               />
-              <SettingsOutlinedIcon
-                sx={{ fontSize: 20, color: "common.black" }}
-              />
+              <IconButton
+                onClick={() => setIsVisualGuidanceSettingsOpen(true)}
+                size="small"
+                sx={{ p: 0.25, color: "common.black" }}
+                aria-label="Open visual guidance settings"
+              >
+                <SettingsOutlinedIcon sx={{ fontSize: 20 }} />
+              </IconButton>
             </Box>
           </Box>
         </Box>
@@ -428,7 +480,7 @@ export default function ArticleDetail() {
 
       <Box
         sx={{
-          px: { xs: 3, md: "171px" },
+          px: { xs: 3, md: 6, lg: "171px" },
           py: { xs: 6, md: "80px" },
           background:
             "linear-gradient(120deg, rgba(255,255,255,0.95) 0%, rgba(241,240,253,0.75) 45%, rgba(216,237,255,0.65) 100%)"
@@ -558,6 +610,7 @@ export default function ArticleDetail() {
                 {section.paragraphs.map((paragraph, paragraphIndex) => {
                   const paragraphKey = `${section.id}-${paragraphIndex}`;
                   const isDimmed =
+                    visualGuidanceSettings.paragraphHighlightEnabled &&
                     activeFocusedParagraphKeys.length > 0 &&
                     !activeFocusedParagraphKeys.includes(paragraphKey);
 
@@ -589,6 +642,18 @@ export default function ArticleDetail() {
           </Box>
         </Box>
       </Box>
+
+      <VisualGuidanceSettingsDialog
+        open={isVisualGuidanceSettingsOpen}
+        onClose={() => setIsVisualGuidanceSettingsOpen(false)}
+        settings={visualGuidanceSettings}
+        onSettingsChange={(nextSettings) =>
+          setVisualGuidanceSettings((previous) => ({
+            ...previous,
+            ...nextSettings
+          }))
+        }
+      />
     </Box>
   );
 }

@@ -1,9 +1,12 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import { AnimatePresence, motion } from "framer-motion";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import { designSystemColors } from "@/config/theme";
 
 type EyeTrackerProps = {
@@ -37,6 +40,10 @@ type CalibrationStateEventDetail = {
 
 type ScrollingStateEventDetail = {
   enabled: boolean;
+};
+
+type OpenVisualGuidanceSettingsEventDetail = {
+  source: "eyetracker";
 };
 
 type WebGazer = {
@@ -175,7 +182,6 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
   const [showCalibrationIntro, setShowCalibrationIntro] = React.useState(false);
   const [calibrationAnimationSeed, setCalibrationAnimationSeed] =
     React.useState(0);
-  const [bootNonce, setBootNonce] = React.useState(0);
 
   const completedCalibrationPoints = React.useMemo(
     () =>
@@ -198,7 +204,6 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
       setShowGazeCursor(false);
       setIsScrollingEnabled(true);
       setErrorMessage("");
-      setBootNonce(0);
     }
   }, [enabled]);
 
@@ -285,7 +290,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
         // no-op
       }
     };
-  }, [enabled, bootNonce, isTrackingRequested]);
+  }, [enabled, isTrackingRequested]);
 
   React.useEffect(() => {
     const tracker = window.webgazer;
@@ -341,33 +346,59 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
     [status]
   );
 
-  const beginCalibrationFlow = React.useCallback(async () => {
-    setCalibrationHits({});
-    setIsCalibrating(true);
-    setShowCalibrationIntro(true);
-    await window.webgazer?.clearData?.();
-  }, []);
-
   const handleConfirmCalibrationIntro = React.useCallback(() => {
     setShowCalibrationIntro(false);
     setCalibrationAnimationSeed((previous) => previous + 1);
   }, []);
 
-  const handleStartTracking = React.useCallback(async () => {
+  const handleStartTracking = React.useCallback(() => {
     setErrorMessage("");
     setShowGazeCursor(false);
-    await beginCalibrationFlow();
+    setCalibrationHits({});
+    setIsCalibrating(true);
+    setShowCalibrationIntro(true);
     setIsTrackingRequested(true);
-  }, [beginCalibrationFlow]);
+  }, []);
 
   const handleStopTracking = React.useCallback(() => {
+    const tracker = window.webgazer;
+    tracker?.setGazeListener(null);
+    tracker?.removeMouseEventListeners?.();
+    tracker?.showPredictionPoints?.(false);
+    tracker?.showVideoPreview?.(false);
+    tracker?.showFaceOverlay?.(false);
+    tracker?.showFaceFeedbackBox?.(false);
+    try {
+      tracker?.end?.();
+    } catch {
+      // no-op
+    }
+
+    setStatus("idle");
     setIsTrackingRequested(false);
     setIsCalibrating(false);
     setShowCalibrationIntro(false);
+    setCalibrationHits({});
     setGazePoint(null);
     window.dispatchEvent(
       new CustomEvent<GazeEventDetail>("anchor:gaze", { detail: null })
     );
+    window.dispatchEvent(
+      new CustomEvent<CalibrationStateEventDetail>("anchor:calibration-state", {
+        detail: {
+          isCalibrating: false,
+          isTrackingActive: false
+        }
+      })
+    );
+  }, []);
+
+  const handleRecalibrate = React.useCallback(() => {
+    setCalibrationHits({});
+    setIsCalibrating(true);
+    setShowCalibrationIntro(true);
+    setCalibrationAnimationSeed((previous) => previous + 1);
+    void window.webgazer?.clearData?.();
   }, []);
 
   React.useEffect(() => {
@@ -398,30 +429,9 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
           pointerEvents: "auto",
           display: "flex",
           alignItems: "center",
-          gap: 1
+          gap: 0.5
         }}
       >
-        <Typography
-          sx={{
-            fontSize: 12,
-            lineHeight: 1.5,
-            color:
-              status === "active"
-                ? designSystemColors.blue
-                : status === "error"
-                  ? designSystemColors.red
-                  : designSystemColors.grey
-          }}
-        >
-          {status === "loading" && "Eye tracking: starting"}
-          {status === "active" &&
-            (isCalibrating && !isCalibrationComplete
-              ? `Eye tracking: calibrate (${completedCalibrationPoints}/${CALIBRATION_TARGETS.length})`
-              : "Eye tracking: active")}
-          {status === "error" && "Eye tracking: unavailable"}
-          {status === "idle" && "Eye tracking: off"}
-        </Typography>
-
         {(status === "active" || status === "loading") && (
           <Button
             size="small"
@@ -429,7 +439,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
             onClick={handleStopTracking}
             sx={{
               minWidth: 0,
-              px: 0.5,
+              px: 0.75,
               fontSize: 11,
               lineHeight: 1.2,
               color: designSystemColors.red
@@ -443,58 +453,16 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
           <Button
             size="small"
             variant="text"
-            onClick={() => setIsScrollingEnabled((previous) => !previous)}
+            onClick={handleRecalibrate}
             sx={{
               minWidth: 0,
-              px: 0.5,
+              px: 0.75,
               fontSize: 11,
               lineHeight: 1.2,
               color: designSystemColors.blue
             }}
           >
-            {isScrollingEnabled ? "Scroll On" : "Scroll Off"}
-          </Button>
-        )}
-
-        {status === "active" && (
-          <Button
-            size="small"
-            variant="text"
-            onClick={() => setShowGazeCursor((previous) => !previous)}
-            sx={{
-              minWidth: 0,
-              px: 0.5,
-              fontSize: 11,
-              lineHeight: 1.2,
-              color: designSystemColors.blue
-            }}
-          >
-            {showGazeCursor ? "Cursor On" : "Cursor Off"}
-          </Button>
-        )}
-
-        {status === "active" && (
-          <Button
-            size="small"
-            variant="text"
-            onClick={() => {
-              if (isCalibrating) {
-                setIsCalibrating(false);
-                setShowCalibrationIntro(false);
-                return;
-              }
-
-              void beginCalibrationFlow();
-            }}
-            sx={{
-              minWidth: 0,
-              px: 0.5,
-              fontSize: 11,
-              lineHeight: 1.2,
-              color: designSystemColors.blue
-            }}
-          >
-            {isCalibrating ? "Hide" : "Calibrate"}
+            Re-calibrate
           </Button>
         )}
 
@@ -502,15 +470,10 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
           <Button
             size="small"
             variant="text"
-            onClick={() => {
-              if (status === "error") {
-                setBootNonce((value) => value + 1);
-              }
-              void handleStartTracking();
-            }}
+            onClick={handleStartTracking}
             sx={{
               minWidth: 0,
-              px: 0.5,
+              px: 0.75,
               fontSize: 11,
               lineHeight: 1.2,
               color: designSystemColors.blue
@@ -519,6 +482,22 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
             Start
           </Button>
         )}
+
+        <IconButton
+          size="small"
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent<OpenVisualGuidanceSettingsEventDetail>(
+                "anchor:open-visual-guidance-settings",
+                { detail: { source: "eyetracker" } }
+              )
+            );
+          }}
+          aria-label="Open visual guidance settings"
+          sx={{ color: "common.black" }}
+        >
+          <SettingsOutlinedIcon sx={{ fontSize: 20 }} />
+        </IconButton>
       </Box>
 
       {status === "error" && errorMessage && (
@@ -548,6 +527,62 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
         </Box>
       )}
 
+      <Dialog
+        open={status === "active" && isCalibrating && showCalibrationIntro}
+        onClose={() => setShowCalibrationIntro(false)}
+        maxWidth={false}
+        sx={{ zIndex: 1600 }}
+        PaperProps={{
+          sx: {
+            width: "min(480px, calc(100vw - 32px))",
+            p: 2,
+            borderRadius: 1,
+            border: `1px solid ${designSystemColors.lightGrey}`,
+            bgcolor: "common.white",
+            boxShadow: "0px 0px 20px 0px rgba(49,16,68,0.04)",
+            textAlign: "center"
+          }
+        }}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: "transparent"
+            }
+          }
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: 16,
+            lineHeight: 1.5,
+            fontWeight: 600,
+            color: "common.black"
+          }}
+        >
+          Click each target twice to calibrate.
+        </Typography>
+        <Typography
+          sx={{
+            mt: 0.5,
+            fontSize: 14,
+            lineHeight: 1.4,
+            color: designSystemColors.grey
+          }}
+        >
+          Move your mouse to each target and click.
+        </Typography>
+        <Box sx={{ mt: 1.5, display: "flex", justifyContent: "center" }}>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={handleConfirmCalibrationIntro}
+            sx={{ px: 1.5, py: 0.5 }}
+          >
+            OK
+          </Button>
+        </Box>
+      </Dialog>
+
       <AnimatePresence>
         {status === "active" && isCalibrating && (
           <Box
@@ -573,75 +608,6 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
                 bgcolor: alpha(designSystemColors.offWhite, 0.4)
               }}
             />
-
-            <AnimatePresence>
-              {showCalibrationIntro && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 2,
-                    pointerEvents: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    px: 2
-                  }}
-                >
-                  <Box
-                    component={motion.div}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 8 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    sx={{
-                      width: "min(480px, calc(100vw - 32px))",
-                      p: 2,
-                      borderRadius: 1,
-                      border: `1px solid ${designSystemColors.lightGrey}`,
-                      bgcolor: "common.white",
-                      boxShadow: "0px 0px 20px 0px rgba(49,16,68,0.04)",
-                      pointerEvents: "auto",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 1.5,
-                      textAlign: "center"
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 16,
-                        lineHeight: 1.5,
-                        fontWeight: 600,
-                        color: "common.black"
-                      }}
-                    >
-                      Click each target twice to calibrate.
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: 14,
-                        lineHeight: 1.4,
-                        color: designSystemColors.grey
-                      }}
-                    >
-                      Move your mouse to each target and click. Enable Cursor
-                      from the control bar if you want visual debugging.
-                    </Typography>
-
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={handleConfirmCalibrationIntro}
-                      sx={{ px: 1.5, py: 0.5 }}
-                    >
-                      OK
-                    </Button>
-                  </Box>
-                </Box>
-              )}
-            </AnimatePresence>
 
             {!showCalibrationIntro &&
               CALIBRATION_TARGETS.map((target, index) => {
