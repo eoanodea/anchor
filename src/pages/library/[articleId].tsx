@@ -1,3 +1,4 @@
+import * as React from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
@@ -14,10 +15,172 @@ import { designSystemColors } from "@/config/theme";
 import { publicationById, publications } from "@/data/publications";
 
 export default function ArticleDetail() {
+  const FOCUS_DWELL_MS = 500;
+  const HORIZONTAL_LOOK_PADDING = 300;
+  const VERTICAL_LOOK_PADDING = 30;
+  const MAX_LOOK_DISTANCE = 58;
+
   const router = useRouter();
   const articleId =
     typeof router.query.articleId === "string" ? router.query.articleId : "";
   const publication = publicationById[articleId] ?? publications[0];
+  const paragraphElementsRef = React.useRef<Record<string, HTMLElement | null>>(
+    {}
+  );
+  const [lockedParagraphKeys, setLockedParagraphKeys] = React.useState<
+    string[]
+  >([]);
+  const [isCalibrationActive, setIsCalibrationActive] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    let animationFrameId = 0;
+    let latestPoint: { x: number; y: number } | null = null;
+    let pendingCandidateSignature = "";
+    let pendingCandidateKeys: string[] = [];
+    let pendingCandidateStart = 0;
+
+    const signaturesMatch = (first: string[], second: string[]) =>
+      first.length === second.length &&
+      first.every((value, index) => value === second[index]);
+
+    const resolveFocusedParagraph = () => {
+      animationFrameId = 0;
+      if (!latestPoint || isCalibrationActive) {
+        return;
+      }
+
+      const entries = Object.entries(paragraphElementsRef.current)
+        .map(([key, element]) => {
+          if (!element) {
+            return null;
+          }
+
+          const rect = element.getBoundingClientRect();
+          const expandedLeft = rect.left - HORIZONTAL_LOOK_PADDING;
+          const expandedRight = rect.right + HORIZONTAL_LOOK_PADDING;
+          const expandedTop = rect.top - VERTICAL_LOOK_PADDING;
+          const expandedBottom = rect.bottom + VERTICAL_LOOK_PADDING;
+
+          const dx =
+            latestPoint!.x < expandedLeft
+              ? expandedLeft - latestPoint!.x
+              : latestPoint!.x > expandedRight
+                ? latestPoint!.x - expandedRight
+                : 0;
+          const dy =
+            latestPoint!.y < expandedTop
+              ? expandedTop - latestPoint!.y
+              : latestPoint!.y > expandedBottom
+                ? latestPoint!.y - expandedBottom
+                : 0;
+
+          return {
+            key,
+            distance: Math.hypot(dx, dy)
+          };
+        })
+        .filter((entry): entry is { key: string; distance: number } => {
+          if (!entry) {
+            return false;
+          }
+
+          return entry.distance <= MAX_LOOK_DISTANCE;
+        })
+        .sort((first, second) => first.distance - second.distance);
+
+      if (!entries.length) {
+        return;
+      }
+
+      const nextFocusedKeys = [entries[0].key];
+      const secondClosest = entries[1];
+
+      if (
+        secondClosest &&
+        (secondClosest.distance <= 20 ||
+          secondClosest.distance - entries[0].distance <= 14)
+      ) {
+        nextFocusedKeys.push(secondClosest.key);
+      }
+
+      const nextSignature = nextFocusedKeys.join("|");
+      const now = performance.now();
+
+      if (pendingCandidateSignature !== nextSignature) {
+        pendingCandidateSignature = nextSignature;
+        pendingCandidateKeys = nextFocusedKeys;
+        pendingCandidateStart = now;
+        return;
+      }
+
+      if (now - pendingCandidateStart < FOCUS_DWELL_MS) {
+        return;
+      }
+
+      setLockedParagraphKeys((previous) => {
+        if (signaturesMatch(previous, pendingCandidateKeys)) {
+          return previous;
+        }
+
+        return pendingCandidateKeys;
+      });
+    };
+
+    const handleCalibrationState = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        isCalibrating: boolean;
+        isTrackingActive: boolean;
+      }>;
+
+      const calibrationIsOn =
+        customEvent.detail.isTrackingActive && customEvent.detail.isCalibrating;
+      setIsCalibrationActive(calibrationIsOn);
+
+      if (calibrationIsOn) {
+        pendingCandidateSignature = "";
+        pendingCandidateKeys = [];
+        pendingCandidateStart = 0;
+      }
+    };
+
+    window.addEventListener("anchor:calibration-state", handleCalibrationState);
+
+    const handleGaze = (event: Event) => {
+      if (isCalibrationActive) {
+        return;
+      }
+
+      const customEvent = event as CustomEvent<{ x: number; y: number } | null>;
+      latestPoint = customEvent.detail;
+
+      if (animationFrameId) {
+        return;
+      }
+
+      animationFrameId = window.requestAnimationFrame(resolveFocusedParagraph);
+    };
+
+    window.addEventListener("anchor:gaze", handleGaze);
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+      window.removeEventListener("anchor:gaze", handleGaze);
+      window.removeEventListener(
+        "anchor:calibration-state",
+        handleCalibrationState
+      );
+    };
+  }, [isCalibrationActive]);
+
+  const activeFocusedParagraphKeys = isCalibrationActive
+    ? []
+    : lockedParagraphKeys;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "common.white" }}>
@@ -181,7 +344,7 @@ export default function ArticleDetail() {
         <Box
           sx={{
             width: "100%",
-            maxWidth: 793,
+            maxWidth: 920,
             mx: "auto",
             display: "flex",
             flexDirection: "column",
@@ -299,20 +462,35 @@ export default function ArticleDetail() {
                   {section.title}
                 </Typography>
 
-                {section.paragraphs.map((paragraph) => (
-                  <Typography
-                    key={`${section.id}-${paragraph}`}
-                    sx={{
-                      fontSize: 16,
-                      lineHeight: 1.5,
-                      fontWeight: 400,
-                      color: "common.black",
-                      textAlign: "justify"
-                    }}
-                  >
-                    {paragraph}
-                  </Typography>
-                ))}
+                {section.paragraphs.map((paragraph, paragraphIndex) => {
+                  const paragraphKey = `${section.id}-${paragraphIndex}`;
+                  const isDimmed =
+                    activeFocusedParagraphKeys.length > 0 &&
+                    !activeFocusedParagraphKeys.includes(paragraphKey);
+
+                  return (
+                    <Typography
+                      key={paragraphKey}
+                      ref={(element) => {
+                        paragraphElementsRef.current[paragraphKey] = element;
+                      }}
+                      sx={{
+                        fontSize: 18,
+                        lineHeight: 1.68,
+                        fontWeight: 400,
+                        color: isDimmed
+                          ? designSystemColors.grey
+                          : "common.black",
+                        opacity: isDimmed ? 0.58 : 1,
+                        textAlign: "justify",
+                        transition:
+                          "opacity 140ms ease-out, color 140ms ease-out"
+                      }}
+                    >
+                      {paragraph}
+                    </Typography>
+                  );
+                })}
               </Box>
             ))}
           </Box>

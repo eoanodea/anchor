@@ -25,6 +25,16 @@ type CalibrationTarget = {
 
 type CalibrationHits = Record<string, number>;
 
+type GazeEventDetail = {
+  x: number;
+  y: number;
+} | null;
+
+type CalibrationStateEventDetail = {
+  isCalibrating: boolean;
+  isTrackingActive: boolean;
+};
+
 type WebGazer = {
   begin: () => Promise<unknown>;
   end?: () => void;
@@ -150,6 +160,7 @@ function loadWebGazer(): Promise<void> {
 export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
   const [status, setStatus] = React.useState<EyeTrackerStatus>("idle");
   const [gazePoint, setGazePoint] = React.useState<GazePoint | null>(null);
+  const [showGazeCursor, setShowGazeCursor] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [isTrackingRequested, setIsTrackingRequested] = React.useState(false);
   const [calibrationHits, setCalibrationHits] = React.useState<CalibrationHits>(
@@ -179,6 +190,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
       setCalibrationHits({});
       setIsCalibrating(true);
       setShowCalibrationIntro(false);
+      setShowGazeCursor(false);
       setErrorMessage("");
       setBootNonce(0);
     }
@@ -188,6 +200,9 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
     if (!enabled || !isTrackingRequested) {
       setStatus("idle");
       setGazePoint(null);
+      window.dispatchEvent(
+        new CustomEvent<GazeEventDetail>("anchor:gaze", { detail: null })
+      );
       return;
     }
 
@@ -223,6 +238,11 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
           const x = Math.min(Math.max(data.x, 0), window.innerWidth);
           const y = Math.min(Math.max(data.y, 0), window.innerHeight);
           setGazePoint({ x, y });
+          window.dispatchEvent(
+            new CustomEvent<GazeEventDetail>("anchor:gaze", {
+              detail: { x, y }
+            })
+          );
         });
 
         await tracker.begin();
@@ -250,6 +270,9 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
       const tracker = window.webgazer;
       tracker?.setGazeListener(null);
       tracker?.removeMouseEventListeners?.();
+      window.dispatchEvent(
+        new CustomEvent<GazeEventDetail>("anchor:gaze", { detail: null })
+      );
       try {
         tracker?.end?.();
       } catch {
@@ -259,16 +282,22 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
   }, [enabled, bootNonce, isTrackingRequested]);
 
   React.useEffect(() => {
-    if (status !== "active") {
-      return;
-    }
-
     const tracker = window.webgazer;
-    const showCalibrationPreview = isCalibrating && !isCalibrationComplete;
-    tracker?.showVideoPreview?.(showCalibrationPreview);
-    tracker?.showFaceOverlay?.(showCalibrationPreview);
-    tracker?.showFaceFeedbackBox?.(showCalibrationPreview);
+    tracker?.showVideoPreview?.(false);
+    tracker?.showFaceOverlay?.(false);
+    tracker?.showFaceFeedbackBox?.(false);
   }, [isCalibrationComplete, isCalibrating, status]);
+
+  React.useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent<CalibrationStateEventDetail>("anchor:calibration-state", {
+        detail: {
+          isCalibrating: status === "active" && isCalibrating,
+          isTrackingActive: status === "active"
+        }
+      })
+    );
+  }, [isCalibrating, status]);
 
   const handleCalibrationPointClick = React.useCallback(
     (target: CalibrationTarget) => {
@@ -310,6 +339,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
 
   const handleStartTracking = React.useCallback(async () => {
     setErrorMessage("");
+    setShowGazeCursor(false);
     await beginCalibrationFlow();
     setIsTrackingRequested(true);
   }, [beginCalibrationFlow]);
@@ -319,6 +349,9 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
     setIsCalibrating(false);
     setShowCalibrationIntro(false);
     setGazePoint(null);
+    window.dispatchEvent(
+      new CustomEvent<GazeEventDetail>("anchor:gaze", { detail: null })
+    );
   }, []);
 
   React.useEffect(() => {
@@ -387,6 +420,23 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
             }}
           >
             Stop
+          </Button>
+        )}
+
+        {status === "active" && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setShowGazeCursor((previous) => !previous)}
+            sx={{
+              minWidth: 0,
+              px: 0.5,
+              fontSize: 11,
+              lineHeight: 1.2,
+              color: designSystemColors.blue
+            }}
+          >
+            {showGazeCursor ? "Cursor On" : "Cursor Off"}
           </Button>
         )}
 
@@ -543,8 +593,8 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
                         color: designSystemColors.grey
                       }}
                     >
-                      As you move your mouse, follow the on-screen cursor and
-                      click on the dots.
+                      Move your mouse to each target and click. Enable Cursor
+                      from the control bar if you want visual debugging.
                     </Typography>
 
                     <Button
@@ -635,7 +685,7 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
         )}
       </AnimatePresence>
 
-      {status === "active" && gazePoint && (
+      {status === "active" && showGazeCursor && gazePoint && (
         <Box
           sx={{
             position: "fixed",
