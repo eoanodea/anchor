@@ -432,6 +432,28 @@ export default function EyeTracker({ enabled = true }: EyeTrackerProps) {
           gap: 0.5
         }}
       >
+        <Typography
+          sx={{
+            fontSize: 12,
+            lineHeight: 1.4,
+            color:
+              status === "error"
+                ? designSystemColors.red
+                : status === "active"
+                  ? designSystemColors.green
+                  : designSystemColors.grey
+          }}
+        >
+          {status === "loading"
+            ? "Loading eye tracker..."
+            : status === "active"
+              ? isCalibrating
+                ? `Calibrating (${completedCalibrationPoints}/${CALIBRATION_TARGETS.length})`
+                : "Tracking active"
+              : status === "error"
+                ? "Error initializing eye tracker"
+                : "Tracking inactive"}
+        </Typography>
         {(status === "active" || status === "loading") && (
           <Button
             size="small"

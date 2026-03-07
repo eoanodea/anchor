@@ -1,32 +1,46 @@
 # Anchor
 
-This project is configured for static export and deployment to GitHub Pages.
+A Next.js + React web application for visual reading guidance, including eye-tracking support and a publication library view. This project uses [WebGazer.js](https://webgazer.cs.brown.edu/) for eye-tracking and provides various visual guidance features to enhance reading experience.
 
-## Local development
+## Libraries Used
 
-```bash
-npm install
-npm run dev
-```
+- Next.js
+- React
+- TypeScript
+- MUI (Material UI + Emotion)
+- Framer Motion
+- ESLint + Prettier
 
-## Build static files
+## How to Replicate (Step by Step)
 
-```bash
-npm run build
-```
+1. Clone the repository.
 
-The static site is generated in `out/`.
+   ```bash
+   git clone https://github.com/eoanodea/anchor.git
+   ```
 
-## GitHub Pages deployment
+2. Enter the project folder.
 
-Deployment is automated with GitHub Actions via `.github/workflows/deploy-pages.yml`.
+   ```bash
+   cd anchor
+   ```
 
-1. Push to `main`.
-2. In GitHub, enable **Settings → Pages → Source: GitHub Actions**.
-3. Wait for the **Deploy to GitHub Pages** workflow to complete.
+3. Install dependencies.
 
-## Base path behavior
+   ```bash
+   npm install
+   ```
 
-- On production builds in GitHub Actions, the app automatically uses the repository name as `basePath` (for example, `/anchor`).
-- For local development, no `basePath` is applied.
-- If deploying from a user/org repository like `username.github.io`, no `basePath` is applied.
+4. Run the development server.
+
+   ```bash
+   npm run dev
+   ```
+
+5. Open the app in your browser at `http://localhost:3000`.
+
+6. (Optional) Build for production.
+
+   ```bash
+   npm run build
+   ```
