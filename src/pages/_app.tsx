@@ -6,9 +6,12 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "@/config/theme";
 import AppShell from "@/components/AppShell";
+import EyeTracker from "@/components/EyeTracker";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
+  const isPublicationPage = props.router.pathname === "/library/[articleId]";
+
   return (
     <AppCacheProvider {...props}>
       <Head>
@@ -16,6 +19,7 @@ export default function App(props: AppProps) {
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <EyeTracker enabled={isPublicationPage} />
         <AppShell>
           <Component {...pageProps} />
         </AppShell>
