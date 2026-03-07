@@ -5,6 +5,7 @@ import { AppCacheProvider } from "@mui/material-nextjs/v16-pagesRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "@/config/theme";
+import AppShell from "@/components/AppShell";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
@@ -15,7 +16,9 @@ export default function App(props: AppProps) {
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Component {...pageProps} />
+        <AppShell>
+          <Component {...pageProps} />
+        </AppShell>
       </ThemeProvider>
     </AppCacheProvider>
   );
