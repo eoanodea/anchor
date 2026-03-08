@@ -1,52 +1,45 @@
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
+import Link from "next/link";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import MicNoneOutlinedIcon from "@mui/icons-material/MicNoneOutlined";
 import EastRoundedIcon from "@mui/icons-material/EastRounded";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import { designSystemColors } from "@/config/theme";
+import { publications } from "@/data/publications";
 
-const recentSearchItems = [
-  {
-    id: "guided-reading",
-    title: "Guided Reading & Visual Anchors",
-    icon: (
-      <MenuBookOutlinedIcon
-        sx={{ fontSize: 16, color: designSystemColors.blue }}
-      />
-    )
-  },
-  {
-    id: "attention-orientation",
-    title: "Attention & Orientation in Digital Text",
-    icon: (
-      <MenuBookOutlinedIcon
-        sx={{ fontSize: 16, color: designSystemColors.blue }}
-      />
-    )
-  },
-  {
-    id: "sarah-chen",
-    title: "Dr. Sarah Chen Machine Learning",
-    icon: (
-      <PersonOutlineOutlinedIcon
-        sx={{ fontSize: 16, color: designSystemColors.blue }}
-      />
-    )
-  },
-  {
-    id: "cognitive-load",
-    title: "Reducing Cognitive Load in Academic Tasks",
-    icon: (
-      <ArticleOutlinedIcon
-        sx={{ fontSize: 16, color: designSystemColors.blue }}
-      />
-    )
+function parsePublishedDate(published: string): number {
+  const daysAgoMatch = published.match(/Published\s+(\d+)\s+days?\s+ago/i);
+  if (daysAgoMatch) {
+    const daysAgo = Number(daysAgoMatch[1]);
+    return Date.now() - daysAgo * 24 * 60 * 60 * 1000;
   }
-] as const;
+
+  const monthYearMatch = published.match(
+    /Published\s+([A-Za-z]{3,9})\s+(\d{4})/i
+  );
+  if (monthYearMatch) {
+    const parsedTime = new Date(
+      `${monthYearMatch[1]} 1, ${monthYearMatch[2]}`
+    ).getTime();
+    return Number.isNaN(parsedTime) ? 0 : parsedTime;
+  }
+
+  return 0;
+}
+
+const recentSearchItems = [...publications]
+  .sort(
+    (leftPublication, rightPublication) =>
+      parsePublishedDate(rightPublication.published) -
+      parsePublishedDate(leftPublication.published)
+  )
+  .slice(0, 3)
+  .map((publication) => ({
+    id: publication.id,
+    title: publication.title
+  }));
 
 export default function Home() {
   return (
@@ -183,6 +176,8 @@ export default function Home() {
             {recentSearchItems.map((item) => (
               <Grid key={item.id} size={{ xs: 12, sm: 6, md: 3 }}>
                 <Box
+                  component={Link}
+                  href={`/library/${item.id}`}
                   sx={{
                     height: 140,
                     borderRadius: 1.5,
@@ -192,7 +187,13 @@ export default function Home() {
                     boxShadow: "0px 0px 20px 0px rgba(26,26,26,0.05)",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between"
+                    justifyContent: "space-between",
+                    textDecoration: "none",
+                    cursor: "pointer",
+                    transition: "box-shadow 0.15s ease",
+                    "&:hover": {
+                      boxShadow: "0px 0px 24px 0px rgba(26,26,26,0.12)"
+                    }
                   }}
                 >
                   <Typography
@@ -214,7 +215,9 @@ export default function Home() {
                       justifyContent: "center"
                     }}
                   >
-                    {item.icon}
+                    <ArticleOutlinedIcon
+                      sx={{ fontSize: 16, color: designSystemColors.blue }}
+                    />
                   </Box>
                 </Box>
               </Grid>
