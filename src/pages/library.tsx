@@ -197,7 +197,7 @@ export default function Library() {
     <Box
       sx={{
         minHeight: "100vh",
-        px: { xs: 3, md: "171px" },
+        px: { xs: 3, md: 6, lg: "171px" },
         pt: { xs: 8, md: "100px" },
         pb: { xs: 10, md: "120px" },
         background:
@@ -347,7 +347,7 @@ export default function Library() {
 
         <Grid container spacing={3}>
           {topicCards.map((card) => (
-            <Grid key={card.id} size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid key={card.id} size={{ xs: 12, sm: 6, md: 6, lg: 3 }}>
               <Box
                 sx={{
                   position: "relative",

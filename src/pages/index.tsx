@@ -174,7 +174,7 @@ export default function Home() {
 
           <Grid container spacing={3}>
             {recentSearchItems.map((item) => (
-              <Grid key={item.id} size={{ xs: 12, sm: 6, md: 3 }}>
+              <Grid key={item.id} size={{ xs: 12, sm: 6, md: 6, lg: 4 }}>
                 <Box
                   component={Link}
                   href={`/library/${item.id}`}
