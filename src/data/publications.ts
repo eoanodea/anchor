@@ -28,17 +28,17 @@ export const publications: readonly Publication[] = [
     description:
       "Explores how subtle visual overlays and line anchors can reduce cognitive load and improve focus when reading dense academic content.",
     image: "/images/library/girl.png",
-    authorNames: "Dr. Aris Thorne & Prof. Elena Vance",
-    authorInstitution: "Institute of Quantum Biology, Stanford University",
+    authorNames: "Stefan Paz Berrios & Alison Colfer",
+    authorInstitution: "Dun Laoghaire Institute Of Art Design + Technology",
     sections: [
       {
         id: "abstract",
         title: "Abstract",
         level: 1,
         paragraphs: [
-          "The aim of this project is to evaluate whether a minimal, guided-reading overlay can improve user focus and efficiency when interacting with academic text. Existing tools largely focus on enhancing visibility, but very few actively guide visual attention in a controlled way.",
-          "Many users lose their place, struggle to scan dense paragraphs, and experience high cognitive load when reading academic content online. These difficulties create significant barriers, particularly for visually impaired and neurodiverse users.",
-          "If visual guidance can reliably reduce this friction, it has the potential to make digital reading environments more accessible and less cognitively demanding for a wide range of readers."
+          "This research investigates whether minimalist guided-reading overlays can improve focus and efficiency when interacting with academic text. While many accessibility tools improve visibility through magnification or contrast adjustments, few systems actively support visual attention during reading tasks.",
+          "Academic reading often involves scanning dense documents, locating key sections, and navigating complex layouts. These tasks can increase cognitive load and cause readers to lose orientation within the text. This study explores whether subtle visual cues, such as line anchors, focus regions, and reduced visual clutter, can support reading without adding additional interface complexity.",
+          "The aim is to evaluate whether lightweight guidance can make digital academic environments more accessible and cognitively manageable for a wider range of users."
         ]
       },
       {
@@ -46,53 +46,90 @@ export const publications: readonly Publication[] = [
         title: "1. Introduction",
         level: 1,
         paragraphs: [
-          "Academic reading places heavy demands on attention and working memory. Dense layouts and complex terminology make it easy to lose orientation, miss key details, or become mentally overloaded.",
-          "This work explores whether lightweight guided-reading cues can help readers maintain context and move through scholarly text more confidently."
+          "Digital research platforms provide access to vast amounts of academic content, yet reading scholarly material online remains challenging. Long documents, dense paragraphs, and complex terminology place significant demands on attention and working memory.",
+          "Readers frequently move between sections, scan for information, and search for key concepts rather than reading sequentially. As a result, maintaining orientation within a document can become difficult, particularly in visually dense interfaces.",
+          "This research explores whether simple visual guidance techniques can support readers by helping them maintain focus and navigate academic content more effectively."
         ]
       },
       {
-        id: "methodology",
-        title: "2. Methodology",
+        id: "challenges-reading",
+        title: "2. Challenges in Academic Reading",
         level: 1,
         paragraphs: [
-          "We evaluated static and minimally adaptive overlays across long-form digital documents, measuring comprehension, scroll regressions, and subjective cognitive load.",
-          "The interface intentionally minimized additional UI complexity to isolate the impact of attention-guidance cues."
+          "Academic reading differs from casual reading in both structure and behaviour.",
+          "Instead of reading linearly, users often jump between headings, scan paragraphs, and search for specific terms. These behaviours can increase the likelihood of losing one's place in the text.",
+          "Dense layouts and limited visual hierarchy further contribute to cognitive load, requiring additional mental effort to maintain orientation.",
+          "For users with visual or cognitive differences, such as dyslexia, nystagmus, or low vision, these challenges can become even more pronounced."
         ]
       },
       {
-        id: "data-collection",
-        title: "2.1 Data Collection",
+        id: "accessibility-digital-reading-tools",
+        title: "3. Accessibility and Digital Reading Tools",
+        level: 1,
+        paragraphs: [
+          "Many accessibility tools focus primarily on improving text visibility. Common features include adjustable font sizes, contrast controls, screen magnification, and text-to-speech support.",
+          "While these features improve readability, they do not necessarily address the cognitive challenges associated with navigating complex academic documents.",
+          "Accessibility frameworks such as WCAG and Universal Design for Learning emphasise reducing cognitive load and simplifying interfaces. However, many digital reading environments still lack features designed to actively support attention and orientation."
+        ]
+      },
+      {
+        id: "guided-visual-attention",
+        title: "4. Guided Visual Attention",
+        level: 1,
+        paragraphs: [
+          "Research in human-computer interaction suggests that subtle visual cues can effectively guide user attention. Techniques such as highlighting, spatial anchors, and focus regions have been used to reduce cognitive workload in visually complex environments.",
+          "Studies indicate that simple and static visual cues are often more effective than animated or highly dynamic elements. Minimalist guidance techniques may therefore be well suited to reading interfaces where clarity and focus are essential."
+        ]
+      },
+      {
+        id: "minimalist-overlay-design",
+        title: "4.1 Minimalist Overlay Design",
         level: 2,
         paragraphs: [
-          "Participants completed guided reading tasks and think-aloud protocols while interacting with academic passages of varying density and structure.",
-          "Behavioral logs and post-task surveys were used to compare navigation effort and confidence."
+          "This research proposes a set of lightweight visual overlays designed to support reading orientation. These cues include line highlighting, focus modes that reduce surrounding visual noise, and subtle anchors that help readers maintain their position in the text.",
+          "The design intentionally prioritises simplicity. Instead of introducing additional interface elements, the overlays act as subtle supports layered over existing content. The goal is to guide attention without overwhelming the reader or disrupting the natural reading experience."
         ]
       },
       {
-        id: "results-discussion",
-        title: "3. Results & Discussion",
+        id: "research-methodology",
+        title: "5. Research Methodology",
         level: 1,
         paragraphs: [
-          "Readers using guided overlays reported stronger orientation and reduced fatigue, with fewer regressions in high-density sections.",
-          "The results suggest that simple visual anchors can improve reading flow when they are subtle, consistent, and easy to ignore when unnecessary."
+          "To evaluate the effectiveness of guided-reading overlays, this research proposes a comparison between a baseline academic reading interface and a version enhanced with minimalist visual guidance cues.",
+          "Participants will complete short reading and information-location tasks designed to reflect common academic behaviours such as scanning sections, identifying key concepts, and navigating between headings.",
+          "The study will measure task efficiency, user orientation within the text, and perceived cognitive effort during reading."
         ]
       },
       {
-        id: "future-work",
-        title: "4. Future Work",
+        id: "planned-evaluation",
+        title: "6. Planned Evaluation",
         level: 1,
         paragraphs: [
-          "Future studies will test adaptive guidance that responds to user pace and document structure while preserving user control.",
-          "We also plan to evaluate these patterns with broader accessibility cohorts and multilingual academic corpora."
+          "The prototype developed for this research is designed to test whether subtle visual guidance can support reading without introducing additional visual complexity.",
+          "Participants will interact with academic content under two conditions: a standard digital reading interface and a version enhanced with guided-reading overlays.",
+          "The comparison will allow the study to explore whether these cues improve users' ability to maintain focus and navigate dense text.",
+          "User feedback will also be collected to understand how readers perceive the usability and helpfulness of these visual supports."
         ]
       },
+      {
+        id: "design-implications",
+        title: "7. Design Implications",
+        level: 1,
+        paragraphs: [
+          "The goal of this research is not only to evaluate the effectiveness of guided-reading overlays but also to explore broader design implications for accessible digital reading environments.",
+          "If minimalist visual cues prove beneficial, they could inform the development of future academic platforms that support attention and orientation without introducing additional interface complexity.",
+          "This approach aligns with accessibility principles that prioritise reducing cognitive load while maintaining clarity and usability."
+        ]
+      },
+
       {
         id: "conclusion",
-        title: "5. Conclusion",
+        title: "8. Conclusion",
         level: 1,
         paragraphs: [
-          "Guided-reading overlays show promise as lightweight assistive support for academic reading. They can reduce cognitive friction without introducing major interface overhead.",
-          "This positions attention guidance as a practical complement to existing readability and accessibility tooling."
+          "Academic reading places substantial demands on attention and cognitive processing, particularly when users interact with long and visually dense documents online.",
+          "While existing accessibility tools focus primarily on visibility adjustments, relatively little work has explored how visual guidance might support sustained attention during reading.",
+          "This research proposes a minimalist guided-reading approach that aims to support orientation and reduce cognitive friction in academic reading environments. The upcoming evaluation of this prototype will help determine whether such cues can meaningfully improve the digital reading experience."
         ]
       },
       {
