@@ -23,20 +23,20 @@ export default function ArticleDetail() {
   const HORIZONTAL_LOOK_PADDING = 300;
   const VERTICAL_LOOK_PADDING = 30;
   const MAX_LOOK_DISTANCE = 58;
-  const PARAGRAPH_CENTER_DEAD_ZONE_PX = 26;
-  const PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC = 24;
-  const PARAGRAPH_CENTER_MAX_SCROLL_PX_PER_SEC = 95;
+  const SECTION_CENTER_DEAD_ZONE_PX = 26;
+  const SECTION_CENTER_MIN_SCROLL_PX_PER_SEC = 24;
+  const SECTION_CENTER_MAX_SCROLL_PX_PER_SEC = 95;
 
   const router = useRouter();
   const articleId =
     typeof router.query.articleId === "string" ? router.query.articleId : "";
   const publication = publicationById[articleId] ?? publications[0];
-  const paragraphElementsRef = React.useRef<Record<string, HTMLElement | null>>(
+  const sectionElementsRef = React.useRef<Record<string, HTMLElement | null>>(
     {}
   );
-  const [lockedParagraphKeys, setLockedParagraphKeys] = React.useState<
-    string[]
-  >([]);
+  const [lockedSectionId, setLockedSectionId] = React.useState<string | null>(
+    null
+  );
   const [isCalibrationActive, setIsCalibrationActive] = React.useState(false);
   const [isTrackingActive, setIsTrackingActive] = React.useState(false);
   const [visualGuidanceSettings, setVisualGuidanceSettings] =
@@ -76,22 +76,18 @@ export default function ArticleDetail() {
 
     let animationFrameId = 0;
     let latestPoint: { x: number; y: number } | null = null;
-    let pendingCandidateSignature = "";
-    let pendingCandidateKeys: string[] = [];
+    let pendingCandidateSectionId = "";
     let pendingCandidateStart = 0;
 
-    const signaturesMatch = (first: string[], second: string[]) =>
-      first.length === second.length &&
-      first.every((value, index) => value === second[index]);
-
-    const resolveFocusedParagraph = () => {
+    const resolveFocusedSection = () => {
       animationFrameId = 0;
       if (!latestPoint || isCalibrationActive) {
         return;
       }
+      const gazePoint = latestPoint;
 
-      const entries = Object.entries(paragraphElementsRef.current)
-        .map(([key, element]) => {
+      const entries = Object.entries(sectionElementsRef.current)
+        .map(([sectionId, element]) => {
           if (!element) {
             return null;
           }
@@ -103,24 +99,24 @@ export default function ArticleDetail() {
           const expandedBottom = rect.bottom + VERTICAL_LOOK_PADDING;
 
           const dx =
-            latestPoint!.x < expandedLeft
-              ? expandedLeft - latestPoint!.x
-              : latestPoint!.x > expandedRight
-                ? latestPoint!.x - expandedRight
+            gazePoint.x < expandedLeft
+              ? expandedLeft - gazePoint.x
+              : gazePoint.x > expandedRight
+                ? gazePoint.x - expandedRight
                 : 0;
           const dy =
-            latestPoint!.y < expandedTop
-              ? expandedTop - latestPoint!.y
-              : latestPoint!.y > expandedBottom
-                ? latestPoint!.y - expandedBottom
+            gazePoint.y < expandedTop
+              ? expandedTop - gazePoint.y
+              : gazePoint.y > expandedBottom
+                ? gazePoint.y - expandedBottom
                 : 0;
 
           return {
-            key,
+            sectionId,
             distance: Math.hypot(dx, dy)
           };
         })
-        .filter((entry): entry is { key: string; distance: number } => {
+        .filter((entry): entry is { sectionId: string; distance: number } => {
           if (!entry) {
             return false;
           }
@@ -133,23 +129,11 @@ export default function ArticleDetail() {
         return;
       }
 
-      const nextFocusedKeys = [entries[0].key];
-      const secondClosest = entries[1];
-
-      if (
-        secondClosest &&
-        (secondClosest.distance <= 20 ||
-          secondClosest.distance - entries[0].distance <= 14)
-      ) {
-        nextFocusedKeys.push(secondClosest.key);
-      }
-
-      const nextSignature = nextFocusedKeys.join("|");
+      const nextFocusedSectionId = entries[0].sectionId;
       const now = performance.now();
 
-      if (pendingCandidateSignature !== nextSignature) {
-        pendingCandidateSignature = nextSignature;
-        pendingCandidateKeys = nextFocusedKeys;
+      if (pendingCandidateSectionId !== nextFocusedSectionId) {
+        pendingCandidateSectionId = nextFocusedSectionId;
         pendingCandidateStart = now;
         return;
       }
@@ -158,13 +142,9 @@ export default function ArticleDetail() {
         return;
       }
 
-      setLockedParagraphKeys((previous) => {
-        if (signaturesMatch(previous, pendingCandidateKeys)) {
-          return previous;
-        }
-
-        return pendingCandidateKeys;
-      });
+      setLockedSectionId((previous) =>
+        previous === nextFocusedSectionId ? previous : nextFocusedSectionId
+      );
     };
 
     const handleCalibrationState = (event: Event) => {
@@ -179,13 +159,12 @@ export default function ArticleDetail() {
       setIsCalibrationActive(calibrationIsOn);
 
       if (!trackingIsOn || calibrationIsOn) {
-        pendingCandidateSignature = "";
-        pendingCandidateKeys = [];
+        pendingCandidateSectionId = "";
         pendingCandidateStart = 0;
       }
 
       if (!trackingIsOn) {
-        setLockedParagraphKeys([]);
+        setLockedSectionId(null);
       }
     };
 
@@ -212,7 +191,7 @@ export default function ArticleDetail() {
         return;
       }
 
-      animationFrameId = window.requestAnimationFrame(resolveFocusedParagraph);
+      animationFrameId = window.requestAnimationFrame(resolveFocusedSection);
     };
 
     window.addEventListener("anchor:gaze", handleGaze);
@@ -233,9 +212,9 @@ export default function ArticleDetail() {
     };
   }, [isCalibrationActive, isTrackingActive]);
 
-  const activeFocusedParagraphKeys = React.useMemo(
-    () => (isCalibrationActive || !isTrackingActive ? [] : lockedParagraphKeys),
-    [isCalibrationActive, isTrackingActive, lockedParagraphKeys]
+  const activeFocusedSectionId = React.useMemo(
+    () => (isCalibrationActive || !isTrackingActive ? null : lockedSectionId),
+    [isCalibrationActive, isTrackingActive, lockedSectionId]
   );
 
   React.useEffect(() => {
@@ -248,8 +227,7 @@ export default function ArticleDetail() {
       return;
     }
 
-    const primaryParagraphKey = activeFocusedParagraphKeys[0];
-    if (!primaryParagraphKey) {
+    if (!activeFocusedSectionId) {
       return;
     }
 
@@ -257,9 +235,8 @@ export default function ArticleDetail() {
     let lastTimestamp = 0;
 
     const step = (timestamp: number) => {
-      const paragraphElement =
-        paragraphElementsRef.current[primaryParagraphKey];
-      if (!paragraphElement) {
+      const sectionElement = sectionElementsRef.current[activeFocusedSectionId];
+      if (!sectionElement) {
         animationFrameId = 0;
         return;
       }
@@ -273,27 +250,27 @@ export default function ArticleDetail() {
       const elapsedSeconds = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
 
-      const rect = paragraphElement.getBoundingClientRect();
-      const paragraphCenterY = rect.top + rect.height / 2;
+      const rect = sectionElement.getBoundingClientRect();
+      const sectionCenterY = rect.top + rect.height / 2;
       const viewportCenterY = window.innerHeight / 2;
-      const offset = paragraphCenterY - viewportCenterY;
+      const offset = sectionCenterY - viewportCenterY;
       const absoluteOffset = Math.abs(offset);
 
-      if (absoluteOffset <= PARAGRAPH_CENTER_DEAD_ZONE_PX) {
+      if (absoluteOffset <= SECTION_CENTER_DEAD_ZONE_PX) {
         animationFrameId = 0;
         return;
       }
 
       const normalized = Math.min(
-        (absoluteOffset - PARAGRAPH_CENTER_DEAD_ZONE_PX) /
-          (window.innerHeight / 2 - PARAGRAPH_CENTER_DEAD_ZONE_PX),
+        (absoluteOffset - SECTION_CENTER_DEAD_ZONE_PX) /
+          (window.innerHeight / 2 - SECTION_CENTER_DEAD_ZONE_PX),
         1
       );
       const speed =
-        PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC +
+        SECTION_CENTER_MIN_SCROLL_PX_PER_SEC +
         normalized *
-          (PARAGRAPH_CENTER_MAX_SCROLL_PX_PER_SEC -
-            PARAGRAPH_CENTER_MIN_SCROLL_PX_PER_SEC);
+          (SECTION_CENTER_MAX_SCROLL_PX_PER_SEC -
+            SECTION_CENTER_MIN_SCROLL_PX_PER_SEC);
 
       const maxDelta = speed * elapsedSeconds;
       const delta = Math.sign(offset) * Math.min(absoluteOffset, maxDelta);
@@ -316,7 +293,7 @@ export default function ArticleDetail() {
       }
     };
   }, [
-    activeFocusedParagraphKeys,
+    activeFocusedSectionId,
     isCalibrationActive,
     isTrackingActive,
     visualGuidanceSettings
@@ -585,41 +562,44 @@ export default function ArticleDetail() {
               gap: 2.5
             }}
           >
-            {publication.sections.map((section) => (
-              <Box
-                key={section.id}
-                id={section.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2.5,
-                  scrollMarginTop: "24px"
-                }}
-              >
-                <Typography
+            {publication.sections.map((section) => {
+              const isDimmed =
+                visualGuidanceSettings.paragraphHighlightEnabled &&
+                !!activeFocusedSectionId &&
+                activeFocusedSectionId !== section.id;
+
+              return (
+                <Box
+                  key={section.id}
+                  id={section.id}
+                  ref={(element: HTMLDivElement | null) => {
+                    sectionElementsRef.current[section.id] = element;
+                  }}
                   sx={{
-                    fontSize: section.level === 2 ? 20 : 32,
-                    lineHeight: 1.3,
-                    fontWeight: 600,
-                    color: "common.black"
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2.5,
+                    scrollMarginTop: "24px"
                   }}
                 >
-                  {section.title}
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: section.level === 2 ? 20 : 32,
+                      lineHeight: 1.3,
+                      fontWeight: 600,
+                      color: isDimmed
+                        ? designSystemColors.grey
+                        : "common.black",
+                      opacity: isDimmed ? 0.58 : 1,
+                      transition: "opacity 140ms ease-out, color 140ms ease-out"
+                    }}
+                  >
+                    {section.title}
+                  </Typography>
 
-                {section.paragraphs.map((paragraph, paragraphIndex) => {
-                  const paragraphKey = `${section.id}-${paragraphIndex}`;
-                  const isDimmed =
-                    visualGuidanceSettings.paragraphHighlightEnabled &&
-                    activeFocusedParagraphKeys.length > 0 &&
-                    !activeFocusedParagraphKeys.includes(paragraphKey);
-
-                  return (
+                  {section.paragraphs.map((paragraph) => (
                     <Typography
-                      key={paragraphKey}
-                      ref={(element) => {
-                        paragraphElementsRef.current[paragraphKey] = element;
-                      }}
+                      key={`${section.id}-${paragraph.slice(0, 40)}-${paragraph.length}`}
                       sx={{
                         fontSize: 18,
                         lineHeight: 1.68,
@@ -635,10 +615,10 @@ export default function ArticleDetail() {
                     >
                       {paragraph}
                     </Typography>
-                  );
-                })}
-              </Box>
-            ))}
+                  ))}
+                </Box>
+              );
+            })}
           </Box>
         </Box>
       </Box>
